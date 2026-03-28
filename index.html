@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Finance Tracker | Smart Money Manager</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for pie chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        h1 i {
+            background: #00b4aa;
+            padding: 12px;
+            border-radius: 50%;
+        }
+        .balance-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .balance-label {
+            font-size: 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #ccc;
+        }
+        .balance-amount {
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        .balance-amount.positive {
+            color: #4caf50;
+        }
+        .balance-amount.negative {
+            color: #f44336;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .summary-item {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 0.8rem;
+        }
+        .summary-label {
+            font-size: 0.8rem;
+        }
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        .income { color: #4caf50; }
+        .expense { color: #f44336; }
+
+        /* Form & Chart Layout */
+        .row {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .form-section {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-section {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 24px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: rgba(255,255,255,0.9);
+            outline: none;
+        }
+        button {
+            background: #00b4aa;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #009688;
+            transform: scale(0.98);
+        }
+        .transactions {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .transaction-info {
+            flex: 2;
+        }
+        .transaction-cat {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        .transaction-amount {
+            font-weight: 600;
+        }
+        .income-amount {
+            color: #4caf50;
+        }
+        .expense-amount {
+            color: #f44336;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            width: auto;
+            margin: 0;
+            padding: 8px;
+            font-size: 1.1rem;
+        }
+        .delete-btn:hover {
+            color: #ff4444;
+            transform: none;
+        }
+        canvas {
+            max-height: 250px;
+            width: 100%;
+        }
+        @media (max-width: 800px) {
+            .row {
+                flex-direction: column;
+            }
+            .balance-amount {
+                font-size: 2.2rem;
+            }
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-coins"></i> Finance Tracker</h1>
+
+    <div class="balance-card">
+        <div class="balance-label">Your Balance</div>
+        <div class="balance-amount" id="balance">₹0.00</div>
+        <div class="summary">
+            <div class="summary-item"><div class="summary-label">Total Income</div><div class="summary-value income" id="totalIncome">₹0</div></div>
+            <div class="summary-item"><div class="summary-label">Total Expense</div><div class="summary-value expense" id="totalExpense">₹0</div></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-section">
+            <h2><i class="fas fa-plus-circle"></i> Add Transaction</h2>
+            <input type="text" id="desc" placeholder="Description (e.g., Groceries, Salary)" autocomplete="off">
+            <input type="number" id="amount" placeholder="Amount (₹)" step="0.01">
+            <select id="category">
+                <option value="Food">🍔 Food</option>
+                <option value="Transport">🚗 Transport</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+                <option value="Bills">💡 Bills</option>
+                <option value="Income">💰 Income</option>
+                <option value="Other">📦 Other</option>
+            </select>
+            <div style="display: flex; gap: 12px;">
+                <button id="incomeBtn" style="background: #2e7d32;">+ Income</button>
+                <button id="expenseBtn" style="background: #c62828;">- Expense</button>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2><i class="fas fa-chart-pie"></i> Expense Breakdown</h2>
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+
+    <div class="transactions">
+        <h2><i class="fas fa-list"></i> Transaction History</h2>
+        <div id="transactionList"></div>
+    </div>
+    <footer>Data saved in your browser (localStorage). Add income/expense, track your money!</footer>
+</div>
+
+<script>
+    // ---------- Data Model ----------
+    let transactions = [];
+
+    // Load from localStorage
+    function loadData() {
+        const stored = localStorage.getItem('finance_data');
+        if (stored) {
+            transactions = JSON.parse(stored);
+        } else {
+            // Sample demo data
+            transactions = [
+                { id: Date.now(), desc: "Salary", amount: 50000, type: "income", category: "Income" },
+                { id: Date.now()+1, desc: "Groceries", amount: 3500, type: "expense", category: "Food" },
+                { id: Date.now()+2, desc: "Movie", amount: 800, type: "expense", category: "Entertainment" }
+            ];
+        }
+        updateUI();
+    }
+
+    function saveData() {
+        localStorage.setItem('finance_data', JSON.stringify(transactions));
+    }
+
+    // Add transaction
+    function addTransaction(desc, amount, type, category) {
+        if (!desc.trim() || isNaN(amount) || amount <= 0) {
+            alert("Please enter valid description and amount.");
+            return false;
+        }
+        const newTx = {
+            id: Date.now(),
+            desc: desc.trim(),
+            amount: parseFloat(amount),
+            type: type,
+            category: category
+        };
+        transactions.push(newTx);
+        saveData();
+        updateUI();
+        return true;
+    }
+
+    function deleteTransaction(id) {
+        transactions = transactions.filter(tx => tx.id !== id);
+        saveData();
+        updateUI();
+    }
+
+    // Calculate totals
+    function getTotals() {
+        let totalIncome = 0, totalExpense = 0;
+        transactions.forEach(tx => {
+            if (tx.type === 'income') totalIncome += tx.amount;
+            else totalExpense += tx.amount;
+        });
+        return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
+    }
+
+    // Update all UI elements
+    let chartInstance = null;
+    function updateUI() {
+        const { totalIncome, totalExpense, balance } = getTotals();
+        document.getElementById('balance').innerHTML = `₹${balance.toFixed(2)}`;
+        document.getElementById('totalIncome').innerHTML = `₹${totalIncome.toFixed(2)}`;
+        document.getElementById('totalExpense').innerHTML = `₹${totalExpense.toFixed(2)}`;
+        const balanceDiv = document.getElementById('balance');
+        balanceDiv.className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
+
+        // Update transaction list
+        const listDiv = document.getElementById('transactionList');
+        if (transactions.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; opacity:0.7;">No transactions yet. Add some!</p>';
+        } else {
+            listDiv.innerHTML = transactions.slice().reverse().map(tx => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <strong>${tx.desc}</strong><br>
+                        <span class="transaction-cat">${tx.category}</span>
+                    </div>
+                    <div class="transaction-amount ${tx.type === 'income' ? 'income-amount' : 'expense-amount'}">
+                        ${tx.type === 'income' ? '+' : '-'} ₹${tx.amount.toFixed(2)}
+                    </div>
+                    <button class="delete-btn" onclick="deleteTransaction(${tx.id})"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            `).join('');
+        }
+
+        // Update pie chart (only for expenses)
+        const expenseCategories = {};
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                expenseCategories[tx.category] = (expenseCategories[tx.category] || 0) + tx.amount;
+            }
+        });
+        const labels = Object.keys(expenseCategories);
+        const data = Object.values(expenseCategories);
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        if (labels.length) {
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', '#c9cbcf'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                }
+            });
+        } else {
+            // No expenses – show empty chart message
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.font = "14px 'Inter'";
+            ctx.fillStyle = "#ccc";
+            ctx.fillText("No expenses yet", ctx.canvas.width/2-50, ctx.canvas.height/2);
+        }
+    }
+
+    // Event listeners
+    document.getElementById('incomeBtn').addEventListener('click', () => {
+        const desc = document.getElementById('desc').value;
+        const amount = document.getElementById('amount').value;
+        const category = document.getElementById('category').value;
+        if (addTransaction(desc, amount, 'income', category)) {
+            document.getElementById('desc').value = '';
+            document.getElementById('amount').value = '';
+        }
+    });
+    document.getElementById('expenseBtn').addEventListener('click', () => {
+        const desc = document.getElementById('desc').value;
+        const amount = document.getElementById('amount').value;
+        const category = document.getElementById('category').value;
+        if (addTransaction(desc, amount, 'expense', category)) {
+            document.getElementById('desc').value = '';
+            document.getElementById('amount').value = '';
+        }
+    });
+
+    // Initial load
+    loadData();
+</script>
+</body>
+</html>
